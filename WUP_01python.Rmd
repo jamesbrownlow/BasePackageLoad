@@ -1,0 +1,62 @@
+---
+title: "Untitled"
+output: html_document
+date: "2022-10-12"
+---
+
+## Initial Setup
+
+```{r initial-setup, eval=T, echo=FALSE, include=FALSE}
+install.packages('reticulate')
+reticulate::virtualenv_create('testEnv')
+reticulate::use_virtualenv('testEnv')
+reticulate::virtualenv_install('testEnv', packages = 'numpy')
+reticulate::virtualenv_install('testEnv', packages = 'matplotlib')
+reticulate::virtualenv_install('testEnv', packages = 'pandas')
+reticulate::virtualenv_install('testEnv', packages = 'stats')
+```
+
+## Setup Block
+```{r setup, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+library(reticulate)
+reticulate::use_virtualenv('testEnv')
+```
+
+```{python}
+import pandas as pd
+pushupsData = pd.read_csv('pushups.csv')
+type(pushupsData)
+pushupsData.columns
+```
+## boxplot of pushups based on position
+```{python}
+
+pushupsData.boxplot(column='pushups',by= 'position')
+#plt.show()
+
+#print(f"pushups: {pushupsData['pushups']}")
+#print(f"positon: {pushupsData['position']}")
+```
+This boxplot shows skill guys do more
+
+## numerical summary  
+```{python}
+pushupsData.groupby("position")['pushups'].describe().reset_index()	
+```
+fix the output to 2 decimals
+
+## inferential results
+
+```{python}
+from scipy import stats
+s = pushupsData['pushups'][(pushupsData["position"] == 'SKILL')]
+l = pushupsData['pushups'][(pushupsData["position"] == 'LINE')]
+ 
+t, p =stats.ttest_ind(s,l)
+print(f"p-value is {p:.6f}")
+
+```
+## Conclusions
+
+
