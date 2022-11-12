@@ -1,0 +1,99 @@
+---
+title: "NUM~CAT python one-way Anova"
+author: "Your Name"
+date: "2022"
+output: html_document
+---
+
+```{r initial-setup, eval=T, echo=FALSE, include=FALSE}
+#install.packages('reticulate')
+reticulate::virtualenv_create('testEnv')
+reticulate::use_virtualenv('testEnv')
+reticulate::virtualenv_install('testEnv', packages = 'numpy')
+#reticulate::virtualenv_install('testEnv', packages = 'matplotlib')
+reticulate::virtualenv_install('testEnv', packages = 'pandas')
+reticulate::virtualenv_install('testEnv', packages = 'scipy')
+reticulate::virtualenv_install('testEnv', packages = 'plotnine')
+reticulate::virtualenv_install('testEnv', packages = 'dpython')
+#reticulate::virtualenv_install('testEnv', packages = 'sklearn')
+reticulate::virtualenv_install('testEnv', packages = 'tabulate')
+reticulate::virtualenv_install('testEnv', packages = 'statsmodels')
+```
+
+```{r include=FALSE}
+require(tidyverse)
+require(tigerstats)
+require(reticulate)
+require(foreign)
+GSSdata <- read.dta(file="GSS1996.dta")
+write_csv(GSSdata, file='GSS1996.csv')
+
+```
+## Our Goal is to answer this question Is there a difference between the alcohol consumed between the row
+## you choose to sit in??
+
+
+```{python}
+import pandas as pd
+#from plotnine import *
+ourdata = pd.read_csv('UCDavis.csv')
+ourdata2 = ourdata[['Seat','alcohol']]
+ourdata2.columns
+
+#ourdata.columns
+```
+
+## Now with ggplot - first select the basic data
+
+
+```{python}
+from plotnine import *
+
+ggplot(ourdata) + aes(x="Seat", y="alcohol") + geom_boxplot()
+
+```
+
+## Numberical summary
+
+```{python}
+import numpy as np
+
+ourdata2.columns
+
+
+def percentile(n):
+    def percentile_(x):
+        return np.percentile(x, n)
+    percentile_.__name__ = 'percentile_%s' % n
+    return percentile_
+
+ourdata2.groupby('Seat').agg([np.mean, np.std, np.max, percentile(25), percentile(50), percentile(75)])
+
+
+
+```
+
+##  Inferential
+
+
+```{python}
+import scipy.stats as stats
+# stats f_oneway functions takes the groups as input and returns ANOVA F and p value
+fvalue, pvalue = stats.f_oneway(
+  ourdata2.alcohol[ourdata2.Seat=='Front'],
+  ourdata2.alcohol[ourdata2.Seat=='Middle'],
+  ourdata2.alcohol[ourdata2.Seat=='Back']) 
+print(F"f-val = {fvalue: .2f}, p = {pvalue: .8f}")
+```
+
+## When significant follow up with TukeyHSD  
+
+```{python}
+from statsmodels.stats.multicomp import pairwise_tukeyhsd
+tukey = pairwise_tukeyhsd(endog=ourdata2['alcohol'],
+                          groups=ourdata2['Seat'],
+                          alpha=0.05)
+                          
+print(tukey)
+```
+
